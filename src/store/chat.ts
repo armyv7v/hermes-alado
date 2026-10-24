@@ -1,5 +1,5 @@
 import { atom } from 'nanostores'
-import { GatewayClient, type GatewayEvent } from '../lib/gateway'
+import { ConsoleClient, type ConsoleFrame } from '../lib/console'
 
 export type ChatMsg = {
   role: 'user' | 'assistant'
@@ -11,8 +11,7 @@ export const messages = atom<ChatMsg[]>([])
 export const thinking = atom<boolean>(false)
 export const pendingConfirm = atom<string>('')
 
-let client: GatewayClient | null = null
-let sessionId: string | null = null
+let client: ConsoleClient | null = null
 let currentProfile: string | null = null
 
 export function chatProfile(): string | null {
@@ -21,33 +20,24 @@ export function chatProfile(): string | null {
 
 export async function connectChat(profile: string): Promise<void> {
   if (client) client.close()
-  client = new GatewayClient()
-  sessionId = null
+  client = new ConsoleClient()
   currentProfile = profile
   messages.set([])
   pendingConfirm.set('')
-  thinking.set(false)
-
-  client.onEvent(handleEvent)
-  await client.connect()
-
-  const params: Record<string, unknown> = { source: 'web' }
-  if (profile !== 'default') params.profile = profile
-  const result = await client.request<{ session_id?: string }>('session.create', params)
-  sessionId = result.session_id ?? null
+  client.on(handleFrame)
+  await client.connect(profile)
 }
 
 export function disconnectChat(): void {
   client?.close()
   client = null
-  sessionId = null
   currentProfile = null
 }
 
 export function sendMessage(text: string): void {
+  if (!client) return
   const trimmed = text.trim()
   if (!trimmed) return
-  if (!client || !sessionId) return
 
   const list = messages.get()
   messages.set([
@@ -56,47 +46,39 @@ export function sendMessage(text: string): void {
     { role: 'assistant', text: '', pending: true },
   ])
   thinking.set(true)
-  client.request('prompt.submit', { session_id: sessionId, text: trimmed }).catch(() => {})
+  client.send(trimmed)
 }
 
 export function cancelMessage(): void {
-  if (!client || !sessionId) return
-  client.request('session.interrupt', { session_id: sessionId }).catch(() => {})
+  client?.cancel()
 }
 
 export function confirmPending(): void {
-  // Approval flow: minimal for now — the confirm button just clears the state.
+  const cmd = pendingConfirm.get()
+  if (!cmd) return
   pendingConfirm.set('')
+  thinking.set(true)
+  client?.confirm(cmd)
 }
 
-function handleEvent(e: GatewayEvent): void {
-  if (e.session_id && sessionId && e.session_id !== sessionId) return
-
+function handleFrame(f: ConsoleFrame): void {
   const list = messages.get()
 
-  if (e.type === 'message.start') {
-    thinking.set(true)
-    return
-  }
-
-  if (e.type === 'message.delta') {
-    const text = typeof e.payload?.text === 'string' ? e.payload.text : ''
-    if (!text) return
+  if (f.type === 'output' && typeof f.data === 'string') {
+    const data = f.data
     const next = replaceLastAssistant(list, (m) => ({
       ...m,
-      text: m.text + text,
+      text: m.text ? `${m.text}\n${data}` : data,
       pending: true,
     }))
     messages.set(next)
-    thinking.set(true)
     return
   }
 
-  if (e.type === 'message.complete') {
-    const final = typeof e.payload?.text === 'string' ? e.payload.text : ''
+  if (f.type === 'error') {
     const next = replaceLastAssistant(list, (m) => ({
       ...m,
-      text: final && !m.text ? final : m.text,
+      text: m.text ? `${m.text}\n⚠ ${String(f.message ?? 'error')}` : `⚠ ${String(f.message ?? 'error')}`,
       pending: false,
     }))
     messages.set(next)
@@ -104,36 +86,28 @@ function handleEvent(e: GatewayEvent): void {
     return
   }
 
-  if (e.type === 'tool.start' || e.type === 'tool.progress' || e.type === 'tool.complete') {
-    thinking.set(true)
-    return
-  }
-
-  if (e.type === 'approval.request') {
-    thinking.set(false)
-    pendingConfirm.set('pendiente')
-    return
-  }
-
-  if (e.type === 'error') {
-    const text =
-      typeof e.payload?.text === 'string'
-        ? e.payload.text
-        : typeof e.payload?.message === 'string'
-          ? e.payload.message
-          : ''
-    const next = replaceLastAssistant(list, (m) => ({
-      ...m,
-      text: m.text ? `${m.text}\n⚠ ${text || 'error'}` : `⚠ ${text || 'error'}`,
-      pending: false,
-    }))
+  if (f.type === 'complete') {
+    const next = replaceLastAssistant(list, (m) => ({ ...m, pending: false }))
     messages.set(next)
     thinking.set(false)
     return
+  }
+
+  if (f.type === 'confirm_required') {
+    thinking.set(false)
+    pendingConfirm.set(String(f.command ?? ''))
+    return
+  }
+
+  if (f.type === 'closed') {
+    thinking.set(false)
   }
 }
 
-function replaceLastAssistant(list: ChatMsg[], fn: (m: ChatMsg) => ChatMsg): ChatMsg[] {
+function replaceLastAssistant(
+  list: ChatMsg[],
+  fn: (m: ChatMsg) => ChatMsg,
+): ChatMsg[] {
   const idx = list.length - 1
   if (idx < 0 || list[idx].role !== 'assistant') return list
   return list.map((m, i) => (i === idx ? fn(m) : m))
