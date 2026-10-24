@@ -31,7 +31,7 @@ export function ChatPage() {
         <button className="btn ghost" onClick={() => navigate('/profiles')}>
           ‹
         </button>
-        <BotAvatar name={name} size={28} />
+        <BotAvatar name={name} size={28} mood={isThinking ? 'work' : 'idle'} />
         <span className="chat-title">{name}</span>
         {isThinking && <span className="chip">pensando…</span>}
       </div>
