@@ -2,6 +2,8 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const proxyTarget = process.env.HERMES_URL || 'http://localhost:9119'
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -26,4 +28,11 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    proxy: {
+      '/api': { target: proxyTarget, changeOrigin: true, ws: true },
+      '/auth': { target: proxyTarget, changeOrigin: true },
+      '/login': { target: proxyTarget, changeOrigin: true },
+    },
+  },
 })

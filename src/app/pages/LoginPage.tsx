@@ -27,7 +27,7 @@ export function LoginPage() {
       <button
         className="btn btn-primary btn-block"
         onClick={() => {
-          window.location.href = loginUrl(window.location.href)
+          window.location.href = loginUrl(window.location.pathname)
         }}
       >
         Iniciar sesión con Hermes

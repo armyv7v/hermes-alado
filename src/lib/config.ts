@@ -27,9 +27,7 @@ export function wsUrl(path: string): string {
   return u.toString()
 }
 
-/** The backend login page (reused for auth). */
-export function loginUrl(next: string): string {
-  const base = getBackendUrl()
-  const nextEnc = encodeURIComponent(next)
-  return `${base}/login?next=${nextEnc}`
+/** The login page (same-origin). `path` is the relative post-login return path. */
+export function loginUrl(path = '/'): string {
+  return `/login?next=${encodeURIComponent(path)}`
 }
