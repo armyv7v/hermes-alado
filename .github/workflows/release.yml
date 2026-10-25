@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish alado-pwa.tar.gz
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: app
+      - name: Build the PWA
+        run: npm run build
+        working-directory: app
+      - name: Package the PWA
+        run: tar -czf alado-pwa.tar.gz dist
+        working-directory: app
+      - name: Checksum
+        run: sha256sum alado-pwa.tar.gz > alado-pwa.tar.gz.sha256
+        working-directory: app
+      - name: Attach to the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            app/alado-pwa.tar.gz
+            app/alado-pwa.tar.gz.sha256
+            docs/media/alado-demo.mp4
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

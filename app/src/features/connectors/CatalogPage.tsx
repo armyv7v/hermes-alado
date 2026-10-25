@@ -1,0 +1,224 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { useStore } from '@nanostores/react'
+import { useSlideNavigate } from '../../app/transition'
+import { useT, useTp, type TextKey } from '../../i18n'
+import {
+  CONNECTOR_FAMILIES,
+  HUB_ID_PREFIX,
+  TOOLSET_ESSENTIALS,
+  type Connector,
+  type ConnectorFamily,
+  type FamilyData,
+} from '../../lib/hermes/connectors'
+import { BotScopedScreen } from '../bot-profile/BotScopedScreen'
+import { Badge } from '../../ui/StatusDot'
+import { BrandIcon } from '../../ui/BrandIcon'
+import { Icon } from '../../ui/Icon'
+import { Row, Section } from '../../ui/Section'
+import { Skeleton } from '../../ui/Skeleton'
+import { catalogLoading, connectors, familyData, familyErrors, loadCatalogData, loadFamilyData } from './store'
+import './connectors.css'
+
+type ChipSelection = { kind: 'all' } | { kind: 'family'; family: ConnectorFamily } | { kind: 'category'; category: string }
+
+const FAMILY_LABEL_KEYS: Record<ConnectorFamily, TextKey> = {
+  apps: 'connectors.family.apps',
+  tools: 'connectors.family.tools',
+  skills: 'connectors.family.skills',
+  plugins: 'connectors.family.plugins',
+  messaging: 'connectors.family.messaging',
+}
+
+/** Best-effort brand URL for a connector, from the family data the desktop
+ *  would derive a hostname from (MCP entry url/install_url, messaging docs_url). */
+function connectorUrl(c: Connector, data: FamilyData): string | null {
+  if (c.family === 'apps') {
+    const entry = data.apps?.catalog.find(e => e.name === c.name)
+    return entry?.url ?? entry?.install_url ?? null
+  }
+  if (c.family === 'messaging') {
+    const platform = data.messaging?.payload.platforms.find(p => p.name === c.name)
+    return platform?.docs_url ?? null
+  }
+  return null
+}
+
+export function CatalogPage() {
+  const { profile = 'default' } = useParams()
+  const { forward } = useSlideNavigate()
+  const list = useStore(connectors)
+  const loading = useStore(catalogLoading)
+  const data = useStore(familyData)
+  const errors = useStore(familyErrors)
+  const [query, setQuery] = useState('')
+  const [chip, setChip] = useState<ChipSelection>({ kind: 'all' })
+  const t = useT()
+  const tp = useTp()
+
+  useEffect(() => {
+    void loadCatalogData(profile)
+  }, [profile])
+
+  const categories = useMemo(() => {
+    const seen = new Set<string>()
+    for (const c of list) if (c.category) seen.add(c.category)
+    return [...seen].sort((a, b) => a.localeCompare(b))
+  }, [list])
+
+  const featuredIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const meta of data.skills?.featured ?? []) ids.add(HUB_ID_PREFIX + meta.identifier)
+    for (const t of data.tools?.toolsets ?? []) if (TOOLSET_ESSENTIALS.includes(t.name)) ids.add(t.name)
+    return ids
+  }, [data])
+
+  const q = query.trim().toLowerCase()
+
+  const filtered = useMemo(() => {
+    return list.filter(c => {
+      if (chip.kind === 'family' && c.family !== chip.family) return false
+      if (chip.kind === 'category' && c.category !== chip.category) return false
+      if (!q) return true
+      return (
+        c.name.toLowerCase().includes(q) ||
+        c.description.toLowerCase().includes(q) ||
+        (c.category ?? '').toLowerCase().includes(q)
+      )
+    })
+  }, [list, chip, q])
+
+  const connected = filtered.filter(c => c.status === 'connected')
+  const featured = filtered.filter(c => c.status !== 'connected' && featuredIds.has(c.id))
+  const available = filtered.filter(c => c.status !== 'connected' && !featuredIds.has(c.id))
+
+  // "active" = connected items of the current filter; skills are merely
+  // enabled, so they don't inflate the Apps count.
+  const activeCount = filtered.filter(c => c.status === 'connected' && c.family !== 'skills').length
+
+  const renderRow = (c: Connector) => (
+    <Row
+      key={`${c.family}:${c.id}`}
+      leading={<BrandIcon name={c.name} url={connectorUrl(c, data)} size={28} />}
+      title={c.name}
+      subtitle={c.description || c.category || t(FAMILY_LABEL_KEYS[c.family])}
+      trailing={
+        c.status === 'connected' ? (
+          <span className="connect-state">
+            <Icon name="check" size={14} />
+            {t('connectors.connectedState')}
+          </span>
+        ) : (
+          <span className="connect-btn">{t('connectors.connect')}</span>
+        )
+      }
+      onClick={() =>
+        forward(`/bots/${encodeURIComponent(profile)}/connectors/${c.family}/${encodeURIComponent(c.id)}`)
+      }
+    />
+  )
+
+  const section = (title: string, items: Connector[]) =>
+    items.length > 0 && (
+      <Section label={title}>
+        {items.map(renderRow)}
+      </Section>
+    )
+
+  const familyErrorRows = CONNECTOR_FAMILIES.filter(
+    f => errors[f] && list.filter(c => c.family === f).length === 0,
+  )
+
+  return (
+    <BotScopedScreen
+      profile={profile}
+      title={t('connectors.title')}
+      actions={<Badge>{tp('connectors.activeCount', activeCount)}</Badge>}
+    >
+      <input
+        className="input catalog-search"
+        type="search"
+        placeholder={t('connectors.searchPlaceholder')}
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+      />
+
+      <div className="chips-scroll">
+        <button
+          type="button"
+          className={`chip${chip.kind === 'all' ? ' chip-active' : ''}`}
+          onClick={() => setChip({ kind: 'all' })}
+        >
+          {t('connectors.all')}
+        </button>
+        {CONNECTOR_FAMILIES.map(f => (
+          <button
+            key={f}
+            type="button"
+            className={`chip${chip.kind === 'family' && chip.family === f ? ' chip-active' : ''}`}
+            onClick={() => setChip({ kind: 'family', family: f })}
+          >
+            {t(FAMILY_LABEL_KEYS[f])}
+          </button>
+        ))}
+        {categories.map(cat => (
+          <button
+            key={cat}
+            type="button"
+            className={`chip${chip.kind === 'category' && chip.category === cat ? ' chip-active' : ''}`}
+            onClick={() => setChip({ kind: 'category', category: cat })}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {loading && list.length === 0 && (
+        <div className="list" style={{ marginTop: 12 }}>
+          {Array.from({ length: 7 }, (_, i) => (
+            <div key={i} className="list-row">
+              <Skeleton variant="circle" width={40} height={40} />
+              <span className="list-row-body">
+                <Skeleton width={160} />
+                <Skeleton width="80%" height={10} />
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && familyErrorRows.length > 0 && (
+        <div className="list" style={{ marginTop: 12 }}>
+          {familyErrorRows.map(f => (
+            <div key={f} className="list-row">
+              <span className="list-row-body">
+                <span className="list-row-title">{t(FAMILY_LABEL_KEYS[f])}</span>
+                <span className="list-row-subtitle error-text" style={{ margin: 0 }}>
+                  {errors[f]}
+                </span>
+              </span>
+              <span className="list-row-trailing">
+                <button type="button" className="btn" onClick={() => void loadFamilyData(f, profile)}>
+                  {t('common.retry')}
+                </button>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {q
+        ? section(t('connectors.results'), filtered)
+        : !loading && (
+            <>
+              {section(t('connectors.connectedSection'), connected)}
+              {section(t('connectors.featured'), featured)}
+              {section(t('connectors.available'), available)}
+              {filtered.length === 0 && familyErrorRows.length === 0 && (
+                <p className="empty">{t('connectors.empty')}</p>
+              )}
+            </>
+          )}
+    </BotScopedScreen>
+  )
+}

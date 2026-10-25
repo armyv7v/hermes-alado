@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0d1117" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Alado</title>
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="description" content="Alado: Hermes, on the fly. Your Hermes Agent bots on your phone." />
+    <script>
+      // Apply the theme before first paint (droidbot.theme is not a secret).
+      ;(function () {
+        var stored = null
+        try {
+          stored = localStorage.getItem('droidbot.theme')
+        } catch (e) {}
+        var choice = stored === 'hermes' || stored === 'clean' ? stored : 'system'
+        var dark = choice === 'hermes' || (choice === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        var theme = dark ? 'hermes' : 'clean'
+        document.documentElement.setAttribute('data-theme', theme)
+        var meta = document.querySelector('meta[name="theme-color"]')
+        if (meta) meta.setAttribute('content', dark ? '#0d1117' : '#ffffff')
+        // Resolve the language pre-paint too (alado.locale is not a secret):
+        // the module bundle applies the full <html lang> logic on boot.
+        try {
+          var lang = localStorage.getItem('alado.locale')
+          if (lang !== 'en' && lang !== 'es') {
+            var nav = (navigator.languages && navigator.languages[0]) || navigator.language || ''
+            lang = nav.toLowerCase().indexOf('es') === 0 ? 'es' : 'en'
+          }
+          document.documentElement.setAttribute('lang', lang)
+        } catch (e) {}
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

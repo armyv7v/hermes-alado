@@ -1,0 +1,230 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { useStore } from '@nanostores/react'
+import { useBack } from '../../app/transition'
+import { useT } from '../../i18n'
+import { ApplyToAllSheet } from '../bots/ApplyToAllSheet'
+import { BotScopedScreen } from '../bot-profile/BotScopedScreen'
+import { getEnvVars, setEnvVar } from '../../lib/hermes/credentials'
+import { vaultLabel } from '../../lib/hermes/vault-labels'
+import { vaultBrandName } from './vault-brand'
+import { BrandIcon } from '../../ui/BrandIcon'
+import { Row, Section } from '../../ui/Section'
+import { Skeleton } from '../../ui/Skeleton'
+import { StatusDot } from '../../ui/StatusDot'
+import { ConfirmSheet } from './ConfirmSheet'
+import { envError, envLoading, envVars, loadEnvVars, removeVar, saveVar } from './store'
+import './vault.css'
+
+export function VaultKeyPage() {
+  const { profile = 'default', key = '' } = useParams()
+  const back = useBack(`/bots/${encodeURIComponent(profile)}/vault`)
+  const vars = useStore(envVars)
+  const loading = useStore(envLoading)
+  const error = useStore(envError)
+  const t = useT()
+
+  const [value, setValue] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [saved, setSaved] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [removing, setRemoving] = useState(false)
+  const [removeError, setRemoveError] = useState('')
+
+  // The last value the user TYPED and saved in this screen (memory only).
+  // "Apply to all my bots" fans this exact string out — never a value
+  // read back from the server (/api/env/reveal is never called).
+  const [lastValue, setLastValue] = useState('')
+  const [applyOpen, setApplyOpen] = useState(false)
+
+  useEffect(() => {
+    void loadEnvVars(profile)
+  }, [profile, key])
+
+  const info = useMemo(() => vars?.[key], [vars, key])
+  const label = info ? vaultLabel(key, info) : key
+
+  async function onSave() {
+    if (!value) {
+      setSaveError(t('vault.newValueRequired'))
+      return
+    }
+    setSaveError('')
+    setSaving(true)
+    try {
+      await saveVar(profile, key, value)
+      setLastValue(value)
+      setValue('')
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : t('vault.valueSaveFailed'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function onDelete() {
+    setRemoving(true)
+    try {
+      await removeVar(profile, key)
+      back()
+    } catch (e) {
+      setRemoveError(e instanceof Error ? e.message : t('vault.deleteFailed'))
+      setRemoving(false)
+      setConfirmOpen(false)
+    }
+  }
+
+  return (
+    <BotScopedScreen profile={profile} title={label}>
+      {loading ? (
+        <div className="list">
+          <Skeleton width="50%" />
+          <Skeleton height={56} />
+          <Skeleton height={96} />
+        </div>
+      ) : error ? (
+        <div className="empty">
+          <p className="error-text">{error}</p>
+          <button className="btn" onClick={() => void loadEnvVars(profile)}>
+            {t('common.retry')}
+          </button>
+        </div>
+      ) : !info ? (
+        <div className="empty">
+          <p className="muted">{t('vault.missingKey', { key })}</p>
+        </div>
+      ) : (
+        <>
+          <Section>
+            <Row
+              leading={
+                <BrandIcon
+                  name={vaultBrandName(key, info) ?? info.provider_label ?? info.provider ?? key}
+                  size={28}
+                />
+              }
+              title={info.description || t('vault.envVar')}
+              trailing={
+                <StatusDot tone={info.is_set ? 'ok' : 'neutral'} label={info.is_set ? t('vault.configured') : t('vault.notConfigured')} />
+              }
+            >
+              <span className="row-key">{key}</span>
+            </Row>
+          </Section>
+
+          {info.is_set && info.redacted_value && (
+            <Section>
+              <div className="card" style={{ padding: 'var(--space-3) var(--space-4)' }}>
+                <div className="vault-key-redacted mono">{info.redacted_value}</div>
+              </div>
+            </Section>
+          )}
+
+          {info.url && (
+            <Section>
+              <a
+                className="btn btn-block"
+                href={info.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t('vault.getKey')}
+              </a>
+            </Section>
+          )}
+
+          {info.tools.length > 0 && (
+            <Section label={t('vault.usedBy')}>
+              <div className="card" style={{ padding: 'var(--space-3) var(--space-4)' }}>
+                <div className="vault-tools">
+                  {info.tools.map(tool => (
+                    <span key={tool} className="chip">
+                      {tool}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </Section>
+          )}
+
+          <Section label={info.is_set ? t('vault.replaceValue') : t('vault.saveValue')}>
+            <div className="card">
+              <input
+                className="input"
+                type={info.is_password ? 'password' : 'text'}
+                autoComplete="off"
+                placeholder={info.is_password ? t('vault.newValue') : t('vault.valuePlaceholder')}
+                value={value}
+                onChange={e => setValue(e.target.value)}
+              />
+              {saveError && <p className="error-text">{saveError}</p>}
+              <button
+                className="btn btn-primary btn-block"
+                style={{ marginTop: 10, minHeight: 44 }}
+                disabled={saving || !value}
+                onClick={() => void onSave()}
+              >
+                {saving ? t('common.saving') : saved ? t('common.saved') : t('common.save')}
+              </button>
+            </div>
+          </Section>
+
+          {lastValue && (
+            <Section>
+              <Row
+                icon="grid"
+                tint="accent"
+                title={t('vault.applyAll')}
+                subtitle={t('vault.applyAllSub')}
+                chevron
+                onClick={() => setApplyOpen(true)}
+              />
+            </Section>
+          )}
+
+          {info.is_set && (
+            <Section>
+              <button
+                className="btn btn-danger btn-block"
+                style={{ minHeight: 44 }}
+                onClick={() => setConfirmOpen(true)}
+              >
+                {t('vault.deleteCredential')}
+              </button>
+              {removeError && <p className="error-text">{removeError}</p>}
+            </Section>
+          )}
+
+          <p className="faint" style={{ padding: '0 var(--space-1)' }}>
+            {t('vault.footnote')}
+          </p>
+
+          <ConfirmSheet
+            open={confirmOpen}
+            onClose={() => setConfirmOpen(false)}
+            title={t('vault.deleteTitle')}
+            body={t('vault.deleteBody', { key })}
+            confirmLabel={t('common.delete')}
+            busy={removing}
+            onConfirm={() => void onDelete()}
+          />
+
+          <ApplyToAllSheet
+            open={applyOpen}
+            onClose={() => setApplyOpen(false)}
+            title={t('vault.applyAll')}
+            itemLabel={t('vault.applyAllItem', { key })}
+            exclude={profile}
+            checkConfigured={async name => (await getEnvVars(name))[key]?.is_set === true}
+            applyOne={async name => {
+              await setEnvVar(key, lastValue, name)
+            }}
+          />
+        </>
+      )}
+    </BotScopedScreen>
+  )
+}

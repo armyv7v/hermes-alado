@@ -1,0 +1,61 @@
+name: Bug report
+description: Something in Alado (or the provisioner/plugin) is not working as expected.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Security issues go through
+        [SECURITY.md](https://github.com/gabogabucho/hermes-alado/blob/main/SECURITY.md),
+        never here.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+      placeholder: "I tapped X and expected Y, but got Z…"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The exact steps that reproduce the issue.
+      placeholder: |
+        1. Open the app at …
+        2. Tap …
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: hermes-version
+    attributes:
+      label: Hermes version
+      description: "Run `hermes --version` on your server."
+      placeholder: "e.g. v0.22.5"
+    validations:
+      required: false
+  - type: input
+    id: alado-version
+    attributes:
+      label: Alado version
+      description: "The release/tag or commit you are on (`git rev-parse --short HEAD`)."
+      placeholder: "e.g. v0.1.0"
+    validations:
+      required: false
+  - type: textarea
+    id: check-output
+    attributes:
+      label: Provisioner diagnostics
+      description: "If the issue is server-side, paste `sudo bash provisioner/prepare.sh --check` output (trimmed)."
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else?
+      description: Browser, phone model, screenshots, console errors — anything that helps.
+    validations:
+      required: false

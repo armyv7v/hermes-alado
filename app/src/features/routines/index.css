@@ -1,0 +1,138 @@
+/* Rutinas (cron + webhooks) — feature-scoped styles, semantic tokens only. */
+
+/* Nueva rutina (blueprints) */
+
+.blueprint-sheet {
+  max-height: 68vh;
+  overflow-y: auto;
+}
+
+.blueprint-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  color: var(--text-1);
+  text-align: left;
+  cursor: pointer;
+}
+
+.blueprint-card:active {
+  background: var(--surface-3);
+}
+
+.blueprint-card-title {
+  font-weight: 600;
+}
+
+.blueprint-card-desc {
+  color: var(--text-2);
+  font-size: 0.85rem;
+}
+
+.blueprint-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.blueprint-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.blueprint-field-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.blueprint-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.blueprint-chips .chip {
+  min-height: 44px;
+  padding: 10px 16px;
+}
+
+.chip--selected {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+
+/* Detalle */
+
+.detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.detail-prompt {
+  margin: 0;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: minmax(110px, auto) 1fr;
+  gap: var(--space-2) var(--space-3);
+  align-items: baseline;
+  font-size: 0.9rem;
+}
+
+.detail-label {
+  color: var(--text-2);
+  font-size: 0.82rem;
+}
+
+.detail-mono {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  word-break: break-all;
+}
+
+.detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.run-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.run-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.run-preview {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}

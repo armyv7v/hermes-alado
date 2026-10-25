@@ -1,0 +1,8 @@
+{
+  "name": "droidbot-push",
+  "label": "Alado Push",
+  "description": "Web Push for the Alado PWA — notifications for finished turns and approvals",
+  "icon": "Bell",
+  "version": "0.1.0",
+  "api": "plugin_api.py"
+}

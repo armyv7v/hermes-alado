@@ -1,0 +1,131 @@
+/*
+ * Semantic design tokens. A theme is just a token set on <html data-theme="…">.
+ * Dark (hermes) is the :root default so a dark-mode user never sees a light
+ * flash before the inline bootstrap script in index.html resolves the choice.
+ *
+ * Palettes are mapped from Hermes Desktop's `nous` preset
+ * (.hermes-ref/apps/shared/src/theme-presets.ts, pinned bf0203a):
+ *   hermes (dark) = nous darkColors  — GitHub Dark Default chrome, Nous blue
+ *   clean  (light) = nous light      — GitHub Light Default neutrals, ink accent
+ * Anything not a 1:1 slot (glass, surface-3, text-3, ok) is derived from the
+ * same VS Code theme family the nous preset was converted from; see the report
+ * in the design notes.
+ */
+:root {
+  color-scheme: dark;
+
+  /* hermes — nous dark palette */
+  --bg: #0d1117; /* background */
+  --surface-1: #161b22; /* popover — raised rows, inputs, sheets */
+  --surface-2: #1a1e24; /* muted — cards */
+  --surface-3: #21262d; /* derived: next rung of the GitHub-dark ladder */
+  --glass: rgba(22, 27, 34, 0.72); /* popover-based */
+  --glass-border: rgba(48, 54, 61, 0.6); /* border-based */
+  --text-1: #e6edf3; /* foreground */
+  --text-2: #7d8590; /* mutedForeground */
+  --text-3: #848d97; /* derived: GitHub dark fg.muted */
+
+  /* Hermes gold accent — the desktop skin colors sent on gateway.ready
+     (ui_accent #FFBF00), slightly desaturated for large fills. Blue survives
+     only as --link. */
+  --accent: #e8b23a;
+  --on-accent: #1a1404;
+  --accent-soft: rgba(232, 178, 58, 0.16);
+  --accent-line: #cd7f32; /* banner_border bronze */
+  --link: #58a6ff;
+  --bubble-bot: var(--surface-2);
+  --border: #30363d;
+  --danger: #f85149; /* destructive */
+  --danger-soft: rgba(248, 81, 73, 0.16);
+  --ok: #3fb950; /* derived: nous darkTerminal green */
+  --ok-soft: rgba(63, 185, 80, 0.16);
+  --warn: #d29922; /* GitHub dark attention.fg */
+  --warn-soft: rgba(210, 153, 34, 0.16);
+
+  /* texture backdrop opacity (dim grayscale noise) */
+  --texture-opacity: 0.05;
+}
+
+:root[data-theme='clean'] {
+  color-scheme: light;
+
+  /* clean — nous light neutrals, ink accent */
+  --bg: #ffffff; /* background */
+  --surface-1: #ffffff; /* popover */
+  --surface-2: #f6f8fa; /* card */
+  --surface-3: #ececef; /* derived: one rung below card */
+  --glass: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(208, 215, 222, 0.6); /* border-based */
+  --text-1: #1f2328; /* foreground */
+  --text-2: #59636e; /* derived: GitHub light fg.muted (mutedForeground's family) */
+  --text-3: #6e7781; /* derived: GitHub light fg.subtle */
+  --accent: #111114; /* ink accent (kept) */
+  --on-accent: #ffffff;
+  --accent-soft: rgba(17, 17, 20, 0.08);
+  --accent-line: rgba(17, 17, 20, 0.35);
+  --link: #0969da;
+  --bubble-bot: #ffffff;
+  --border: #d0d7de;
+  --danger: #cf222e; /* destructive */
+  --danger-soft: rgba(207, 34, 46, 0.12);
+  --ok: #116329; /* derived: nous light terminal green */
+  --ok-soft: rgba(17, 99, 41, 0.12);
+  --warn: #9a6700; /* GitHub light attention.fg */
+  --warn-soft: rgba(154, 103, 0, 0.14);
+
+  --texture-opacity: 0.03;
+}
+
+:root {
+  /* radii */
+  --r-sm: 12px;
+  --r-md: 20px;
+  --r-lg: 28px;
+  --r-full: 999px;
+
+  /* 4-pt spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  /* type */
+  --font-sans:
+    'Manrope Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    Roboto, Helvetica, Arial, sans-serif;
+  --font-mono:
+    'JetBrains Mono', ui-monospace, 'Cascadia Code', Menlo, Consolas,
+    monospace;
+  /* Display wordmark face (OFL). Default: Bodoni Moda, the closest OFL
+     relative of the desktop's commercial Collapse. Playfair Display and
+     DM Serif Display ride along as fallbacks until the user picks one. */
+  --font-display: 'Bodoni Moda', 'Playfair Display', 'DM Serif Display', Georgia, serif;
+
+  /* type scale (px) — 34/28/20/17/15/13 */
+  --text-xl: 34px;
+  --text-lg: 28px;
+  --text-md: 20px;
+  --text-base: 17px;
+  --text-sm: 15px;
+  --text-xs: 13px;
+
+  /* shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  /* motion */
+  --motion-fast: 120ms;
+  --motion-slow: 280ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* safe areas */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  /* per-bot accent (overridden by the avatar/bot identity) */
+  --bot-accent: var(--accent);
+}

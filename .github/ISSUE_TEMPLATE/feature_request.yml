@@ -1,0 +1,33 @@
+name: Feature request
+description: Propose something for Alado. It must pass the "light, everyday" bar.
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Alado is deliberately the opposite of a desk app. Before submitting, check the request
+        against the product principle in
+        [CONTRIBUTING.md](https://github.com/gabogabucho/hermes-alado/blob/main/CONTRIBUTING.md):
+        **Light. Hermes for everyday life, not for sitting down to work.**
+  - type: textarea
+    id: problem
+    attributes:
+      label: What everyday problem does this solve?
+      description: Describe the moment (one-handed, on the go) where this feature pays off.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: What should it look like?
+      description: One tap, sensible defaults. Sketch the flow from the phone's point of view.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Anything simpler you considered (or a reason this belongs in Hermes Desktop instead)?
+    validations:
+      required: false
