@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, type ReactNode } from 'react'
 // Portions adapted from NousResearch/hermes-agent (MIT License, Copyright (c) 2025 Nous Research).
 //
 // The room transcript, mirroring `canonical-group-history.tsx`: each bot
@@ -127,10 +128,43 @@ function MessageRow({ event, members }: { event: RoomEvent; members: RoomMember[
   )
 }
 
-export function GroupMessages({ events, members }: { events: RoomEvent[]; members: RoomMember[] }) {
+/** Distance from the bottom (px) under which we still count as "at the bottom". */
+const STICK_PX = 140
+
+export function GroupMessages({
+  events,
+  members,
+  footer,
+  footerKey = '',
+}: {
+  events: RoomEvent[]
+  members: RoomMember[]
+  /** Rendered after the last message (the live "X is typing…" line). */
+  footer?: ReactNode
+  /** Changes when the footer's content changes, so the view follows it too. */
+  footerKey?: string
+}) {
   const t = useT()
+  const listRef = useRef<HTMLDivElement>(null)
+  const stuck = useRef(true)
+
+  // Follow new messages and the typing line while the reader is at the bottom;
+  // never yank them down while they scroll back through older messages.
+  useLayoutEffect(() => {
+    const el = listRef.current
+    if (el && stuck.current) el.scrollTop = el.scrollHeight
+  }, [events.length, footerKey])
+
   return (
-    <div className="group-messages" role="log">
+    <div
+      ref={listRef}
+      className="group-messages"
+      role="log"
+      onScroll={e => {
+        const el = e.currentTarget
+        stuck.current = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_PX
+      }}
+    >
       {events.length === 0 ? (
         <EmptyState
           title={t('groups.noMessagesTitle')}
@@ -144,6 +178,7 @@ export function GroupMessages({ events, members }: { events: RoomEvent[]; member
           return <MessageRow key={event.seq} event={event} members={members} />
         })
       )}
+      {footer}
     </div>
   )
 }

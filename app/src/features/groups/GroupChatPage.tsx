@@ -187,8 +187,6 @@ export function GroupChatPage() {
         <IconButton icon="more" variant="ghost" label={t('common.more')} onClick={() => setMenuOpen(true)} />
       </header>
 
-      <GroupActivityLine driver={driver} members={room?.members ?? []} />
-
       {room && !driver && !loading && (
         <div className="group-activity">
           <span>{t('groups.driverOff')}</span>
@@ -209,7 +207,12 @@ export function GroupChatPage() {
           <Skeleton width="40%" />
         </div>
       ) : (
-        <GroupMessages events={events} members={room?.members ?? []} />
+        <GroupMessages
+          events={events}
+          members={room?.members ?? []}
+          footer={<GroupActivityLine driver={driver} members={room?.members ?? []} />}
+          footerKey={JSON.stringify(driver?.member_activity ?? null) + String(driver?.working ?? '')}
+        />
       )}
 
       {actionError && <div className="group-actions"><div className="error-text">{actionError}</div></div>}
