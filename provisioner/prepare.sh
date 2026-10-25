@@ -2653,12 +2653,11 @@ EOF
   chown "$HERMES_USER:" "$unit_dir/hermes-serve.service"
   HERMES_UPSTREAM=127.0.0.2
   loginctl enable-linger "$HERMES_USER" >/dev/null 2>&1 || true
-  local i
-  for i in $(seq 1 20); do [[ -S /run/user/$uid/bus ]] && break; sleep 0.5; done
+  for _ in $(seq 1 20); do [[ -S /run/user/$uid/bus ]] && break; sleep 0.5; done
   runuser -u "$HERMES_USER" -- env XDG_RUNTIME_DIR="/run/user/$uid" systemctl --user daemon-reload
   runuser -u "$HERMES_USER" -- env XDG_RUNTIME_DIR="/run/user/$uid" systemctl --user enable --now hermes-serve.service >/dev/null 2>&1
   USER_UNITS+=("hermes-serve.service")
-  for i in $(seq 1 60); do serve_answers && break; sleep 2; done
+  for _ in $(seq 1 60); do serve_answers && break; sleep 2; done
   if serve_answers; then
     info "server: created and started hermes-serve.service (${HERMES_UPSTREAM}:${HERMES_PORT})"
     return 0
@@ -2709,11 +2708,10 @@ restart_hermes_if_needed() {
     manual "restart hermes serve/gateway however they run"
     return
   fi
-  local i
-  for i in $(seq 1 45); do serve_answers && break; sleep 2; done
+  for _ in $(seq 1 45); do serve_answers && break; sleep 2; done
   if [[ -n $ACCESS_RECHECK_HOST ]]; then
     local probe=""
-    for i in $(seq 1 15); do
+    for _ in $(seq 1 15); do
       probe=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 --resolve "${ACCESS_RECHECK_HOST}:443:127.0.0.1" -k         "https://${ACCESS_RECHECK_HOST}/api/health" 2>/dev/null || true)
       probe_ok "$probe" && break
       sleep 2

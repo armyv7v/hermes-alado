@@ -1,4 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { setLocaleChoice } from '../../i18n'
+
+// These cases assert the Spanish rendering; pin the locale so they don't depend on
+// the machine's language (CI runs in English).
+beforeAll(() => setLocaleChoice('es'))
 import { cronToSpanish, scheduleToSpanish } from './cron-spanish'
 
 describe('cronToSpanish', () => {
