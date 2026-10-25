@@ -4,6 +4,7 @@
 // /api/ws, `tui_gateway/methods_groups.py`), mirroring the desktop's canonical
 // client (`apps/desktop/src/plugins/hermes-bots/canonical-groups.ts`). No React:
 // features/groups/* build the stores and screens on top of this.
+import { handleFor } from './group-handles'
 import { t } from '../../i18n'
 import { request } from './connection'
 import type {
@@ -90,6 +91,14 @@ export class HostedGroupEngine {
    *  `createCanonicalGroup`: a name, two to six members with unique profiles
    *  and non-reserved handles (`@all`/`@everyone` are reserved). */
   create(name: string, members: GroupMemberInput[]): Promise<GroupsCreateResult> {
+    const used = new Set<string>()
+    members = members.map(m => {
+      if (m.handle) return m
+      let handle = handleFor(m)
+      if (used.has(handle)) handle = m.profile // two bots with the same visible name
+      used.add(handle)
+      return { ...m, handle }
+    })
     const trimmed = (name ?? '').trim()
     if (!trimmed) throw new Error(t('groups.nameRequired'))
     if (members.length < 2 || members.length > 6) {
