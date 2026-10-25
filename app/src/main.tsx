@@ -39,3 +39,19 @@ if ('serviceWorker' in navigator) {
     window.location.reload()
   })
 }
+
+// Keep the app exactly as tall as the area above the on-screen keyboard. Chrome
+// on Android resizes the layout itself (interactive-widget=resizes-content);
+// iOS Safari does not, so size the shell from the visual viewport and pin the
+// document to the top so the composer stays glued to the keyboard.
+if (window.visualViewport) {
+  const vv = window.visualViewport
+  const fit = (): void => {
+    if (vv.scale > 1.01) return // pinch-zoom: the layout keeps its size
+    document.documentElement.style.setProperty('--app-height', `${Math.round(vv.height)}px`)
+    if (window.scrollY !== 0) window.scrollTo(0, 0)
+  }
+  vv.addEventListener('resize', fit)
+  vv.addEventListener('scroll', fit)
+  fit()
+}
