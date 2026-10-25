@@ -215,9 +215,35 @@ export type { ServerRequest } from './vendor/json-rpc-channel'
 
 // Immediate reconnect on network return / tab becoming visible.
 window.addEventListener('online', wake)
+
+// Back from the background: Android freezes the page's timers, so the heartbeat
+// can't notice that the server dropped the socket meanwhile. The socket still
+// says "open" (a zombie) and events are lost for up to 45 s — the reply never
+// shows until the chat is reopened. After more than a few seconds away, don't
+// trust it: drop and redial now (~1 s); the open chat then resyncs itself.
+const STALE_AFTER_HIDDEN_MS = 8_000
+let hiddenAt = 0
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') wake()
+  if (document.visibilityState === 'hidden') {
+    hiddenAt = Date.now()
+    return
+  }
+  const away = hiddenAt ? Date.now() - hiddenAt : 0
+  hiddenAt = 0
+  if (wantOpen && connectionState.get() === 'open' && away > STALE_AFTER_HIDDEN_MS) {
+    refreshSocket()
+    return
+  }
+  wake()
 })
+
+/** Drop the current socket and dial a fresh one right away (no backoff). */
+function refreshSocket(): void {
+  client.close()
+  clearReconnectTimer()
+  backoffAttempt = 0
+  void runReconnect()
+}
 
 function wake(): void {
   if (!wantOpen || connectionState.get() === 'open') return
