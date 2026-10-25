@@ -26,7 +26,8 @@ registerRoute(
 
 // Mismo comportamiento que el generateSW anterior: la SPA responde las
 // navegaciones, pero nunca las rutas que Hermes posee (login, OAuth, API).
-const denylist = [/^\/api\//, /^\/auth\//, /^\/login/, /^\/dashboard-plugins\//]
+// Paths that look like files (/demo.mp4, /logo.png…) are real files, never app routes.
+const denylist = [/^\/api\//, /^\/auth\//, /^\/login/, /^\/dashboard-plugins\//, /\/[^/]+\.[a-z0-9]{2,5}$/i]
 registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist }))
 
 type PushPayload = {

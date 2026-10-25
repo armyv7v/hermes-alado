@@ -33,4 +33,13 @@ export async function createProfile(
     method: 'POST',
     body: JSON.stringify({ name, description, clone_from: cloneFrom }),
   })
+  // Cloning copies the source bot's SOUL.md too — its persona ("You are Pancho…").
+  // The new bot inherits keys and settings, never the identity: give it its own.
+  if (cloneFrom) {
+    const display = name.charAt(0).toUpperCase() + name.slice(1)
+    await apiFetch(`/api/profiles/${encodeURIComponent(name)}/soul`, {
+      method: 'PUT',
+      body: JSON.stringify({ content: t('bots.defaultSoul', { name: display }) }),
+    }).catch(() => undefined)
+  }
 }

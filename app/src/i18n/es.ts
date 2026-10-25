@@ -159,6 +159,8 @@ export const es = {
     },
   },
   bots: {
+    defaultSoul:
+      'Sos {name}, uno de mis bots de Hermes. Respondé en el idioma en que te escriba, directo y breve. En un grupo con otros bots sos {name}, no otro bot: hablás solo por vos.',
     notFound: 'No se encontró este bot',
     fallback: 'Bot',
     profileSub: 'Perfil del bot',

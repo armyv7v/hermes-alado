@@ -169,6 +169,8 @@ export const en = {
     },
   },
   bots: {
+    defaultSoul:
+      'You are {name}, one of my Hermes bots. Reply in the language I write to you, direct and brief. In a group with other bots you are {name}, not another bot: speak only for yourself.',
     notFound: 'This bot was not found',
     fallback: 'Bot',
     profileSub: 'Bot profile',
