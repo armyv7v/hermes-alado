@@ -31,6 +31,8 @@ export const es = {
     close: 'Cerrar',
   },
   app: {
+    crashTitle: 'Algo falló en esta pantalla.',
+    reload: 'Recargar',
     tagline: 'Hermes, al vuelo.',
     connecting: 'Conectando con Hermes',
     reconnecting: 'Reconectando…',

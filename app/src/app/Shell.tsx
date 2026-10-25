@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
+import { ErrorBoundary, ScreenCrash } from '../ui/ErrorBoundary'
 import { BotProfileEditPage } from '../features/bot-profile/BotProfileEditPage'
 import { BotProfilePage } from '../features/bot-profile/BotProfilePage'
 import { ChatPage } from '../features/chat/ChatPage'
@@ -64,10 +65,12 @@ function ConnectorRedirect() {
 
 export function Shell() {
   const t = useT()
+  const { pathname } = useLocation()
   return (
     <>
       <ReconnectBanner />
       <div className="app-main">
+        <ErrorBoundary fallback={<ScreenCrash />} resetKey={pathname}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/chat/:profile" element={<ChatPage />} />
@@ -116,6 +119,7 @@ export function Shell() {
 
           <Route path="/import" element={<ImportPage />} />
         </Routes>
+        </ErrorBoundary>
       </div>
       <InstallInvite />
       <SecurePromptHost />

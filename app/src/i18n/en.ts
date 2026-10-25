@@ -41,6 +41,8 @@ export const en = {
     close: 'Close',
   },
   app: {
+    crashTitle: 'Something went wrong on this screen.',
+    reload: 'Reload',
     tagline: 'Hermes, on the fly.',
     connecting: 'Connecting to Hermes',
     reconnecting: 'Reconnecting…',

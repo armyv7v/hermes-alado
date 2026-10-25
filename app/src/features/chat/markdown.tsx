@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { ErrorBoundary } from '../../ui/ErrorBoundary'
 
 /**
  * Assistant-text markdown: `react-markdown` + `remark-gfm`, no raw HTML.
@@ -8,6 +9,7 @@ import remarkGfm from 'remark-gfm'
  */
 export function Markdown({ text }: { text: string }) {
   return (
+    <ErrorBoundary fallback={<div className="markdown plain-fallback">{text}</div>}>
     <div className="markdown">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
@@ -18,5 +20,6 @@ export function Markdown({ text }: { text: string }) {
         {text}
       </ReactMarkdown>
     </div>
+    </ErrorBoundary>
   )
 }

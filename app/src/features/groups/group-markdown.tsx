@@ -11,6 +11,7 @@
 // plain prose here too.
 import ReactMarkdown, { type Options } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { ErrorBoundary } from '../../ui/ErrorBoundary'
 
 const MENTION_TOKEN = '@[A-Za-z0-9][A-Za-z0-9._:-]*'
 const PATH_TOKEN = '(?:[A-Za-z]:[\\\\/]|~?\\/)[^\\s`\'")\\]}<>]+'
@@ -24,6 +25,9 @@ interface HastText {
 interface HastElement {
   type: 'element'
   tagName: string
+  // Required by hast-util-to-jsx-runtime: an element without it crashes the
+  // whole render (blank screen) as soon as a message has an @mention or path.
+  properties: Record<string, unknown>
   children: HastNode[]
 }
 
@@ -33,7 +37,7 @@ type HastNode = HastText | HastElement
 const MONO_SKIP = new Set(['code', 'pre'])
 
 function monoCode(value: string): HastElement {
-  return { type: 'element', tagName: 'code', children: [{ type: 'text', value }] }
+  return { type: 'element', tagName: 'code', properties: {}, children: [{ type: 'text', value }] }
 }
 
 /** Walk the hast tree and wrap @mentions / path tokens in `<code>` spans. */
@@ -70,6 +74,7 @@ const monoTokensRehype = (() => (tree: unknown) => {
 
 export function GroupMarkdown({ text }: { text: string }) {
   return (
+    <ErrorBoundary fallback={<div className="markdown plain-fallback">{text}</div>}>
     <div className="markdown">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
@@ -81,5 +86,6 @@ export function GroupMarkdown({ text }: { text: string }) {
         {text}
       </ReactMarkdown>
     </div>
+    </ErrorBoundary>
   )
 }

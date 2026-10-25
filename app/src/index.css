@@ -1012,6 +1012,19 @@ button {
 
 /* ── markdown ─────────────────────────────────────────────────────────── */
 
+.markdown.plain-fallback {
+  white-space: pre-wrap;
+}
+
+.screen-crash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 30vh var(--space-4) 0;
+  text-align: center;
+}
+
 .markdown {
   overflow-wrap: anywhere;
   /* The bubble is pre-wrap for plain text; inherited here it turns the
