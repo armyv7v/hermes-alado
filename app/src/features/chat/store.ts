@@ -3,6 +3,7 @@ import { t } from '../../i18n'
 import { apiFetch } from '../../lib/api'
 import { deliveryTargetFromCommand, parseAgentMessage, replyTextFromResult } from '../../lib/hermes/bot-to-bot'
 import { on, request } from '../../lib/hermes/connection'
+import { JsonRpcGatewayError } from '../../lib/hermes/vendor/json-rpc-channel'
 import { setSessionUnread } from '../../lib/hermes/session-mutations'
 import type { ToolLabel, TranscriptMessage } from '../../lib/hermes/rpc-types'
 import { registerBusySessionProfile } from '../home/busy-store'
@@ -319,6 +320,10 @@ export function setChatVisible(v: boolean): void {
 
 export async function sendMessage(text: string): Promise<void> {
   const sid = liveSid
+  const persisted = storedId
+  const name = profile
+  const generation = openGeneration
+  const current = () => generation === openGeneration && profile === name
   const trimmed = text.trim()
   if (!sid || !trimmed) return
 
@@ -326,8 +331,25 @@ export async function sendMessage(text: string): Promise<void> {
   running.set(true)
 
   try {
-    await request('prompt.submit', { session_id: sid, text: trimmed })
+    try {
+      await request('prompt.submit', { session_id: sid, text: trimmed })
+    } catch (e) {
+      // A mobile reconnect can outlive the gateway's in-memory runtime. This
+      // exact rejection happens before prompt admission, so one retry is safe.
+      if (!(e instanceof JsonRpcGatewayError) || e.code !== 4001 ||
+          e.message !== 'session not found' || !persisted || !name || !current()) throw e
+      const resumed = await request('session.resume', { session_id: persisted, profile: name })
+      if (!current()) return
+      liveSid = resumed.session_id
+      storedId = resumed.stored_session_id ?? persisted
+      registerSessionProfile(liveSid, name)
+      registerSessionProfile(String(storedId), name)
+      registerBusySessionProfile(liveSid, name)
+      canonicalCache.set(name, { id: String(storedId), resolvedId: String(storedId) })
+      await request('prompt.submit', { session_id: liveSid, text: trimmed })
+    }
   } catch (e) {
+    if (!current()) return
     const err = e instanceof Error ? e.message : String(e)
     items.set([...items.get(), { kind: 'error', id: crypto.randomUUID(), text: err }])
     running.set(false)
