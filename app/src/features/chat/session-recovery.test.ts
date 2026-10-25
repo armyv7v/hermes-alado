@@ -3,7 +3,7 @@ import { atom } from 'nanostores'
 import { JsonRpcGatewayError } from '../../lib/hermes/vendor/json-rpc-channel'
 
 const rpc = vi.hoisted(() => vi.fn())
-vi.mock('../../lib/hermes/connection', () => ({ request: rpc, on: vi.fn() }))
+vi.mock('../../lib/hermes/connection', () => ({ request: rpc, on: vi.fn(), connectionState: atom('open') }))
 vi.mock('../../lib/api', () => ({ apiFetch: vi.fn() }))
 vi.mock('../../i18n', () => ({ t: (key: string) => key }))
 vi.mock('../../lib/hermes/session-mutations', () => ({ setSessionUnread: vi.fn() }))

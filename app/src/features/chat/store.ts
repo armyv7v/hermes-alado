@@ -2,7 +2,7 @@ import { atom } from 'nanostores'
 import { t } from '../../i18n'
 import { apiFetch } from '../../lib/api'
 import { deliveryTargetFromCommand, parseAgentMessage, replyTextFromResult } from '../../lib/hermes/bot-to-bot'
-import { on, request } from '../../lib/hermes/connection'
+import { connectionState, on, request } from '../../lib/hermes/connection'
 import { JsonRpcGatewayError } from '../../lib/hermes/vendor/json-rpc-channel'
 import { setSessionUnread } from '../../lib/hermes/session-mutations'
 import type { ToolLabel, TranscriptMessage } from '../../lib/hermes/rpc-types'
@@ -622,3 +622,61 @@ on('error', e => {
   items.set([...items.get(), { kind: 'error', id: crypto.randomUUID(), text }])
   running.set(false)
 })
+
+// ── resync after a reconnect / return to the app ─────────────────────────────
+//
+// Hermes only streams a chat's events to sockets that joined it with a session
+// call. When the phone drops the socket (screen off, app switch) and reconnects,
+// the new socket is not in that chat anymore: the reply keeps happening on the
+// server but never reaches the screen, and "running" never clears. Re-resume
+// the stored session to rejoin it and repaint what was missed — in place, no
+// blank list.
+
+let pendingResync = false
+let resyncing = false
+
+export async function resyncChat(): Promise<void> {
+  const name = profile
+  const stored = storedId
+  const generation = openGeneration
+  if (!name || !stored || resyncing) return
+  resyncing = true
+  try {
+    const res = await request('session.resume', { session_id: String(stored), profile: name })
+    if (generation !== openGeneration || profile !== name) return
+    liveSid = res.session_id
+    storedId = res.stored_session_id ?? stored
+    registerSessionProfile(liveSid, name)
+    registerSessionProfile(String(storedId), name)
+    registerBusySessionProfile(liveSid, name)
+    historyOffset = res.messages?.length ?? 0
+    streamingAssistantId = null
+    liveTools.clear()
+    items.set(normalizeHistory(res.messages ?? []))
+    running.set(false)
+    if (res.inflight) hydrateInflight(res.inflight)
+    if (res.running) running.set(true)
+  } catch {
+    // the next reconnect or return to the app tries again
+  } finally {
+    resyncing = false
+  }
+}
+
+connectionState.listen(state => {
+  if (state !== 'open') {
+    if (profile) pendingResync = true
+    return
+  }
+  if (!pendingResync) return
+  pendingResync = false
+  void resyncChat()
+})
+
+// Back from the background with a turn still "running": the socket may have
+// survived but missed events while the app was frozen — check the real state.
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && profile && running.get()) void resyncChat()
+  })
+}
