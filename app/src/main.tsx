@@ -27,3 +27,15 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// When a new service worker takes control (an update), reload once so the
+// screen runs the new code. Skipped on the very first install (no controller yet).
+if ('serviceWorker' in navigator) {
+  const hadController = Boolean(navigator.serviceWorker.controller)
+  let reloaded = false
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded) return
+    reloaded = true
+    window.location.reload()
+  })
+}

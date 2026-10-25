@@ -13,6 +13,16 @@ declare let self: ServiceWorkerGlobalScope
 // Lo inyecta workbox (vite-plugin-pwa injectManifest).
 declare const __WB_MANIFEST: Array<{ url: string; revision: string | null }>
 
+// A new version takes over as soon as it is installed: an installed Android PWA
+// is almost never fully closed, so "wait until every tab is gone" meant a fix
+// could sit unused for days. The page reloads itself on the switch (main.tsx).
+self.addEventListener('install', () => {
+  void self.skipWaiting()
+})
+self.addEventListener('activate', (event: ExtendableEvent) => {
+  event.waitUntil(self.clients.claim())
+})
+
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
