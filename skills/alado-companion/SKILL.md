@@ -83,7 +83,13 @@ tool_call {"calls":[{"name":"process_manage","arguments":{"action":"submit","ses
 ```
 
 **Secrets** (client secrets, API keys, tokens, passwords) never go through the chat. Ask for them
-with the secure form:
+with the secure form — but **only when the user already has the values at hand**. Each field waits
+about 2 minutes and you are blocked while it waits; if the user has to leave the app to fetch the
+value (another site, another app), the form expires meanwhile. So first tell them where to find the
+values and ask them to reply "ready" / "listo" once they have them copied; open the form only after
+that reply. Ask only for what is truly secret (a client ID or username can go in the chat).
+
+Then:
 
 1. Create a small skill of your own with `skill_manage action=create` (e.g. `x-api-setup`) whose
    frontmatter declares the variables:
