@@ -58,6 +58,12 @@ The user has **no terminal** — they are on their phone, not at the server. Nev
 this on the host / in a terminal / over SSH". Every command is yours to run with the `terminal` tool,
 including setup and logins of command-line tools (`gh auth`, `xurl auth`, `gcloud auth`, …).
 
+**Never ask for a sudo password.** You run as an unprivileged user with no sudo rights, so a sudo
+prompt can only fail. Install tools with Hermes' own manager, no root needed: `hermes pm install
+<name>` (e.g. `gh`; `hermes pm doctor` lists what it offers), or a user-level install (`pip install
+--user`, `npm` prefix in your home). If something truly needs root (an apt package, a system
+service), say so in one line: the server admin has to install it.
+
 **Commands that wait for an answer** (an OAuth flow that prints a URL and waits for the redirect, a
 `[y/N]` prompt, a code to paste):
 
